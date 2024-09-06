@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import Logo from "../assets/logo.svg";
+import { useDispatch } from "react-redux";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 import { loginRoute } from "../utils/APIRoutes";
+import { setCurrentUser } from "../features/user/userSlice";
 
 export default function Login() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [values, setValues] = useState({ username: "", password: "" });
   const toastOptions = {
     position: "bottom-right",
@@ -48,6 +50,7 @@ export default function Login() {
           process.env.REACT_APP_LOCALHOST_KEY,
           JSON.stringify(data.user)
         );
+        dispatch(setCurrentUser(data.user));
         navigate("/");
       }
     }

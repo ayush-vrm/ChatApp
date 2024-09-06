@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { Buffer } from "buffer";
 import loader from "../assets/loader.gif";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
-import { setAvatarRoute } from "../utils/APIRoutes";
+import { setAvatar } from "../features/user/userSlice";
 
 export default function SetAvatar() {
   const api = "https://api.multiavatar.com";
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [avatars, setAvatars] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState(undefined);
+  const { currentUser, status, error } = useSelector((state) => state.user);
 
   const toastOptions = {
     position: "bottom-right",
@@ -28,7 +31,6 @@ export default function SetAvatar() {
     }
   }, [navigate]);
 
-  // Fetch avatars from the API
   useEffect(() => {
     const fetchAvatars = async () => {
       const data = [];
@@ -41,29 +43,24 @@ export default function SetAvatar() {
       setIsLoading(false);
     };
     fetchAvatars();
-  }, [api]);
+  }, []);
 
-  // Set selected avatar
   const setProfilePicture = async () => {
     if (selectedAvatar === undefined) {
       toast.error("Please select an avatar", toastOptions);
     } else {
-      const user = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
-
-      const { data } = await axios.post(`${setAvatarRoute}/${user._id}`, {
-        image: avatars[selectedAvatar],
-      });
-
-      if (data.isSet) {
-        user.isAvatarImageSet = true;
-        user.avatarImage = data.image;
-        localStorage.setItem(process.env.REACT_APP_LOCALHOST_KEY, JSON.stringify(user));
-        navigate("/");
-      } else {
-        toast.error("Error setting avatar. Please try again.", toastOptions);
-      }
+      dispatch(setAvatar({ userId: currentUser._id, image: avatars[selectedAvatar] }));
     }
   };
+
+  useEffect(() => {
+    if (status === 'succeeded') {
+      toast.success("Avatar set successfully", toastOptions);
+      navigate("/");
+    } else if (status ===  'failed') {
+      toast.error("Error setting avatar. Please try again.", toastOptions);
+    }
+  }, [status, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-white text-gray-800">

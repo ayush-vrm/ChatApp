@@ -1,4 +1,3 @@
-
 import { configureStore } from '@reduxjs/toolkit';
 import chatReducer from '../features/chat/chatSlice';
 import userReducer from '../features/user/userSlice';
@@ -10,4 +9,4 @@ const store = configureStore({
   },
 });
 
-export default store; 
+export default store;

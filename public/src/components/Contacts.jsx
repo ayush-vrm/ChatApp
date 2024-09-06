@@ -1,23 +1,14 @@
-import React, { useState, useEffect } from "react";
-import Logo from "../assets/logo.svg";
+import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { setCurrentChat } from "../features/chat/chatSlice";
 
-export default function Contacts({ contacts, changeChat }) {
-  const [currentUserName, setCurrentUserName] = useState(undefined);
-  const [currentUserImage, setCurrentUserImage] = useState(undefined);
-  const [currentSelected, setCurrentSelected] = useState(undefined);
+export default function Contacts() {
+  const dispatch = useDispatch();
+  const { contacts, currentChat } = useSelector((state) => state.chat);
+  const { currentUser } = useSelector((state) => state.user);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const data = await JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
-      setCurrentUserName(data.username);
-      setCurrentUserImage(data.avatarImage);
-    };
-    fetchUser();
-  }, []);
-
-  const changeCurrentChat = (index, contact) => {
-    setCurrentSelected(index);
-    changeChat(contact);
+  const changeCurrentChat = (contact) => {
+    dispatch(setCurrentChat(contact));
   };
 
   return (
@@ -26,11 +17,13 @@ export default function Contacts({ contacts, changeChat }) {
         <h3 className="ml-2 text-lg font-semibold">ChatApp</h3>
       </div>
       <div className="flex-1 overflow-auto p-4">
-        {contacts.map((contact, index) => (
+        {contacts.map((contact) => (
           <div
             key={contact._id}
-            className={`flex items-center gap-4 p-2 rounded-lg cursor-pointer ${index === currentSelected ? "bg-blue-500 text-white" : "bg-gray-100"}`}
-            onClick={() => changeCurrentChat(index, contact)}
+            className={`flex items-center gap-4 p-2 rounded-lg cursor-pointer ${
+              contact._id === currentChat?._id ? "bg-blue-500 text-white" : "bg-gray-100"
+            }`}
+            onClick={() => changeCurrentChat(contact)}
           >
             <img
               className="h-12 w-12 rounded-full"
@@ -41,14 +34,14 @@ export default function Contacts({ contacts, changeChat }) {
           </div>
         ))}
       </div>
-      {currentUserImage && (
+      {currentUser && (
         <div className="flex items-center justify-center p-4 bg-gray-200 border-t">
           <img
             className="h-16 w-16 rounded-full"
-            src={`data:image/svg+xml;base64,${currentUserImage}`}
+            src={`data:image/svg+xml;base64,${currentUser.avatarImage}`}
             alt="User Avatar"
           />
-          <h2 className="ml-4 text-xl font-semibold">{currentUserName}</h2>
+          <h2 className="ml-4 text-xl font-semibold">{currentUser.username}</h2>
         </div>
       )}
     </div>

@@ -1,18 +1,21 @@
-import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { io } from "socket.io-client";
 import { allUsersRoute, host } from "../utils/APIRoutes";
 import ChatContainer from "../components/ChatContainer";
 import Contacts from "../components/Contacts";
 import Welcome from "../components/Welcome";
+import { setCurrentUser } from "../features/user/userSlice";
+import { setContacts, setSocket, setCurrentChat } from "../features/chat/chatSlice";
+import axios from "axios";
 
 export default function Chat() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const socket = useRef();
-  const [contacts, setContacts] = useState([]);
-  const [currentChat, setCurrentChat] = useState(undefined);
-  const [currentUser, setCurrentUser] = useState(undefined);
+  const { currentUser } = useSelector((state) => state.user);
+  const { contacts, currentChat } = useSelector((state) => state.chat);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -20,22 +23,23 @@ export default function Chat() {
       if (!user) {
         navigate("/login");
       } else {
-        setCurrentUser(JSON.parse(user));
+        dispatch(setCurrentUser(JSON.parse(user)));
       }
     };
     fetchUser();
-  }, [navigate]);
+  }, [navigate, dispatch]);
 
   useEffect(() => {
     if (currentUser) {
       socket.current = io(host);
       socket.current.emit("add-user", currentUser._id);
+      dispatch(setSocket(socket.current));
 
       return () => {
         socket.current.disconnect();
       };
     }
-  }, [currentUser]);
+  }, [currentUser, dispatch]);
 
   useEffect(() => {
     const fetchContacts = async () => {
@@ -43,7 +47,7 @@ export default function Chat() {
         if (currentUser.isAvatarImageSet) {
           try {
             const { data } = await axios.get(`${allUsersRoute}/${currentUser._id}`);
-            setContacts(data);
+            dispatch(setContacts(data));
           } catch (error) {
             console.error("Error fetching contacts:", error);
           }
@@ -53,10 +57,10 @@ export default function Chat() {
       }
     };
     fetchContacts();
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, dispatch]);
 
   const handleChatChange = (chat) => {
-    setCurrentChat(chat);
+    dispatch(setCurrentChat(chat));
   };
 
   return (

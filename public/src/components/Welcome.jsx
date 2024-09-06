@@ -1,6 +1,9 @@
 import React from "react";
+import { useSelector } from "react-redux";
 
-export default function Welcome({ currentUser }) {
+export default function Welcome() {
+  const { currentUser } = useSelector((state) => state.user);
+
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-white text-gray-800">
       <h1 className="text-4xl font-bold mb-4 text-gray-900">

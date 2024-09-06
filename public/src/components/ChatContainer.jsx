@@ -1,59 +1,37 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import ChatInput from "./ChatInput";
 import Logout from "./Logout";
 import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
-import { sendMessageRoute, recieveMessageRoute } from "../utils/APIRoutes";
+import { fetchMessages, addMessage, sendMessage } from "../features/chat/chatSlice";
 
-export default function ChatContainer({ currentChat, socket }) {
-  const [messages, setMessages] = useState([]);
+export default function ChatContainer({ socket }) {
+  const dispatch = useDispatch();
+  const { messages, currentChat } = useSelector((state) => state.chat);
+  const { currentUser } = useSelector((state) => state.user);
   const scrollRef = useRef();
-  const [arrivalMessage, setArrivalMessage] = useState(null);
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (currentChat) {
-        try {
-          const data = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
-          const response = await axios.post(recieveMessageRoute, {
-            from: data._id,
-            to: currentChat._id,
-          });
-          setMessages(response.data);
-        } catch (error) {
-          console.error("Error fetching messages:", error);
-        }
-      }
-    };
-    fetchMessages();
-  }, [currentChat]);
+    if (currentChat && currentUser) {
+      dispatch(fetchMessages({ from: currentUser._id, to: currentChat._id }));
+    }
+  }, [currentChat, currentUser, dispatch]);
 
   const handleSendMsg = async (msg) => {
-    if (currentChat) {
-      try {
-        const data = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
-        socket.current.emit("send-msg", {
-          to: currentChat._id,
-          from: data._id,
-          msg,
-        });
-        await axios.post(sendMessageRoute, {
-          from: data._id,
-          to: currentChat._id,
-          message: msg,
-        });
-
-        setMessages((prev) => [...prev, { fromSelf: true, message: msg }]);
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
+    if (currentChat && currentUser) {
+      socket.current.emit("send-msg", {
+        to: currentChat._id,
+        from: currentUser._id,
+        msg,
+      });
+      dispatch(sendMessage({ from: currentUser._id, to: currentChat._id, message: msg }));
     }
   };
 
   useEffect(() => {
     if (socket.current) {
       socket.current.on("msg-recieve", (msg) => {
-        setArrivalMessage({ fromSelf: false, message: msg });
+        dispatch(addMessage({ fromSelf: false, message: msg }));
       });
     }
     return () => {
@@ -61,13 +39,7 @@ export default function ChatContainer({ currentChat, socket }) {
         socket.current.off("msg-recieve");
       }
     };
-  }, [socket]);
-
-  useEffect(() => {
-    if (arrivalMessage) {
-      setMessages((prev) => [...prev, arrivalMessage]);
-    }
-  }, [arrivalMessage]);
+  }, [socket, dispatch]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
